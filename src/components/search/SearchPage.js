@@ -4,7 +4,7 @@ import SearchPageResult from "./SearchPageResult";
 function SearchPage() {
   return (
     <>
-      <Header />
+      <Header color="bg-danger"/>
       <SearchPageResult />
     </>
   );

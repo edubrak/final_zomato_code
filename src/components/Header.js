@@ -1,18 +1,109 @@
-function Header() {
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import { useNavigate } from 'react-router-dom';
+import jwt_Decode from 'jwt-decode';
+import {useState} from 'react';
+import Swal from 'sweetalert2';
+
+function Header(props) {
+
+  let getTokenDetails = ()=>{
+    //read the data from local storage.
+    let token = localStorage.getItem('auth-token')
+    if(token === null){
+      return false;
+    }else {
+      return jwt_Decode(token);
+    }
+  };
+
+  let [userLogin, setUserLogin] = useState(getTokenDetails());
+  let navigate = useNavigate();
+
+  let onSuccess = (credentialResponse)=>{
+    let token = credentialResponse.credential;
+    //save the data on local storage
+    localStorage.setItem('auth-token', token)
+    Swal.fire({
+      icon: 'success',
+      title: 'Login Successfully',
+      text: '',
+    }).then(()=>{
+      window.location.reload(); 
+    });
+  };
+
+  let onError = ()=> {
+    Swal.fire({
+      icon: 'error',
+      title: 'Opps...',
+      text: 'Login Failed Try Again',
+    })
+  }
+
+  console.log(userLogin)
+  let logout = ()=>{
+    Swal.fire({
+      title: 'Are you sure to logout?',
+      text: "",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, logout me!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        //remove data from localstorage
+        //removeItem
+        localStorage.removeItem('auth-token');
+        window.location.reload(); 
+      }
+    })
+    
+    
+    
+    
+  }
+
   return (
     <>
-      <div className="row bg-danger justify-content-center">
-        <div className="col-10 d-flex justify-content-between py-2">
-          <p className="m-0 brand">e!</p>
-          <div>
-            <button className="btn text-white">Login</button>
-            <button className="btn btn-outline-light">
-              <i className="fa fa-search" aria-hidden="true"></i>Create a
-              Account
-            </button>
+      <GoogleOAuthProvider clientId='412533829178-c6mt00n17d8n147ffna0clc0gqpacivk.apps.googleusercontent.com'>
+        <div className="modal fade" id="google-sign-in" tabIndex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title" id="exampleModalLabel">Google Sign-In</h5>
+                <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div className="modal-body">
+                <GoogleLogin onSuccess={onSuccess}
+                onError={onError} />
+
+                
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+
+        <div className={"row justify-content-center" + props.color}>
+          <div className="col-10 d-flex justify-content-between py-2">
+            <p className="m-0 brand hand" onClick={() => navigate("/")}>e!</p>
+            { userLogin ? <div>
+              <span className='fs-5 text-white fw-bold me-3'>Welcome,{userLogin.given_name}</span>
+              <button className="btn btn-outline-light" onClick={logout}>
+                <i className="fa fa-exit" aria-hidden="true"></i>Logout
+              </button>
+            </div> : (
+            <div>
+              <button className="btn text-white" data-bs-toggle="modal" data-bs-target="#google-sign-in">Login</button>
+              <button className="btn btn-outline-light">
+                <i className="fa fa-search" aria-hidden="true"></i>Create a
+                Account
+              </button>
+            </div>
+            )}
+          </div>
+        </div>
+      </GoogleOAuthProvider>
     </>
   );
 }

@@ -2,6 +2,10 @@ import axios from "axios";
 import { useState, useEffect } from "react";
 import Header from "../Header";
 import { useParams } from "react-router-dom";
+import jwt_Decode from 'jwt-decode';
+import Swal from 'sweetalert2';
+
+
 function RestaurantPage() {
   let [tab, setTab] = useState(1);
   let { id } = useParams();
@@ -26,6 +30,21 @@ function RestaurantPage() {
   let [restaurant, setRestaurant] = useState({ ...defaultValue });
   let [menuItems, setMenuItems] = useState([]);
   let [totalPrices, setTotalPrices] = useState(0);
+
+
+  let getTokenDetails = () => {
+    //read the data from local storage.
+    let token = localStorage.getItem('auth-token')
+    if (token === null) {
+      return false;
+    } else {
+      return jwt_Decode(token);
+    }
+  };
+
+  let [userDetails, setUserDetails] = useState(getTokenDetails());
+
+
   let getRestaurantDetails = async () => {
     try {
       let URL = "http://localhost:5003/api/get-restaurant-details-by-id/" + id;
@@ -45,10 +64,12 @@ function RestaurantPage() {
       let URL = `http://localhost:5003/api/get-menu-item-list-by-restaurant-id/${id}`;
       let { data } = await axios.get(URL);
       if (data.status === true) {
+
         setMenuItems([...data.result]);
       } else {
         setMenuItems([]);
       }
+      setTotalPrices(0);
     } catch (error) {
       alert("server error");
     }
@@ -91,19 +112,23 @@ function RestaurantPage() {
       return false;
     }
 
-    var { data } = await axios.post(
-      "http://localhost:5003/api/payment/gen-order"
-    );
+    var serverData = {
+      amount: totalPrices,
+    }
+
+    var { data } = await axios.post("http://localhost:5003/api/payment/gen-order", serverData);
+
     var order = data.order;
+
     var options = {
-      key: "rzp_test_oZS7tZz4uKXgko", // Enter the Key ID generated from the Dashboard
+      key: "rzp_test_SB6qM05YxdTxKc", // Enter the Key ID generated from the Dashboard
       amount: order.amount, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
       currency: order.currency,
-      name: "Zomato Clone payment",
+      name: "Zomato Clone Payment",
       description: "Buying a product from zomato",
       image:
         "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQQLubDHfo9Ind7y2jagRMxlmInf430YRGoDi4ILqVu&s",
-      order_id: order.id, //order is is generated server side
+      order_id: order.id, //order id is generated server side
       handler: async function (response) {
         var sendData = {
           razorpay_payment_id: response.razorpay_payment_id,
@@ -115,15 +140,24 @@ function RestaurantPage() {
           sendData
         );
         if (data.status === true) {
-          alert("Order Place Successfully");
-          window.location.replace("/");
+          Swal.fire({
+            icon: 'success',
+            title: 'Order Place Successfully',
+            text: '',
+          }).then(() => {
+            window.location.replace("/");
+          });
         } else {
-          alert("Payment Fail Rey Again");
+          Swal.fire({
+            icon: 'warning',
+            title: 'Payment Fail, retry Again',
+            text: '',
+          })
         }
       },
       prefill: {
-        name: "Gaurav Kumar",
-        email: "gaurav.kumar@example.com",
+        name: userDetails.name,
+        email: userDetails.email,
         contact: "9999999999",
       },
     };
@@ -246,8 +280,9 @@ function RestaurantPage() {
                   type="text"
                   className="form-control"
                   placeholder="Enter User Name"
-                  value="Deepakkumar"
-                  onChange={() => {}}
+                  value={userDetails.name}
+                  readOnly={true}
+                  onChange={() => { }}
                 />
               </div>
               <div className="mb-3">
@@ -257,9 +292,10 @@ function RestaurantPage() {
                 <input
                   type="email"
                   className="form-control"
-                  value="deepakkumar@gmail.com"
+                  value={userDetails.email}
+                  readOnly={true}
                   placeholder="eg.name@example.com"
-                  onChange={() => {}}
+                  onChange={() => { }}
                 />
               </div>
               <div className="mb-3">
@@ -269,8 +305,8 @@ function RestaurantPage() {
                 <textarea
                   className="form-control"
                   rows="3"
-                  value="@ Nashik"
-                  onChange={() => {}}
+                  value=""
+                  onChange={() => { }}
                 ></textarea>
               </div>
             </div>
@@ -290,7 +326,8 @@ function RestaurantPage() {
         </div>
       </div>
 
-      <Header />
+
+      <Header color="bg-danger" />
       <section className="row justify-content-center">
         <section className="col-11 mt-2 restaurant-main-image position-relative">
           <img src={"/images/" + restaurant.image} alt="" />
@@ -309,15 +346,18 @@ function RestaurantPage() {
                 Contact
               </li>
             </ul>
-            <button
-              data-bs-toggle="modal"
-              href="#exampleModalToggle"
-              role="button"
-              className="btn btn-danger"
-              onClick={getMenuItems}
-            >
-              Place Online Order
-            </button>
+
+            {userDetails ? (
+              <button
+                data-bs-toggle="modal"
+                href="#exampleModalToggle"
+                role="button"
+                className="btn btn-danger"
+                onClick={getMenuItems}
+              >
+                Place Online Order
+              </button>
+            ) : <button className="btn btn-danger" disabled={true}>Please Login to Place Order</button>}
           </div>
           {tab === 1 ? (
             <section>
@@ -326,8 +366,8 @@ function RestaurantPage() {
               <p className="mb-3 text-muted small">
                 {restaurant.cuisine.length > 0
                   ? restaurant.cuisine.reduce((pValue, cValue) => {
-                      return pValue.name + ", " + cValue.name;
-                    })
+                    return pValue.name + ", " + cValue.name;
+                  })
                   : null}
               </p>
 
