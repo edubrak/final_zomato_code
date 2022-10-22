@@ -4,6 +4,9 @@ import Header from "../Header";
 import { useParams } from "react-router-dom";
 import jwt_Decode from 'jwt-decode';
 import Swal from 'sweetalert2';
+import "react-responsive-carousel/lib/styles/carousel.min.css"; // requires a loader
+import { Carousel } from 'react-responsive-carousel';
+
 
 
 function RestaurantPage() {
@@ -173,6 +176,28 @@ function RestaurantPage() {
     <>
       <div
         className="modal fade"
+        id="slideShow"
+        tabIndex="-1"
+        aria-labelledby="staticBackdropLabel"
+        aria-hidden="true">
+        <div className="modal-dialog modal-lg " style={{ height: "75vh" }}>
+          <div className="modal-content">
+            <div className="modal-body h-75">
+              <Carousel showThumbs={false} infiniteLoop={true}>
+                {restaurant.thumb.map((value, index) => {
+                  return (
+                    <div key={index} className="w-100">
+                      <img src={"/images/" + value} />
+                    </div>
+                  );
+                })}
+              </Carousel>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        className="modal fade"
         id="exampleModalToggle"
         aria-hidden="true"
         aria-labelledby="exampleModalToggleLabel"
@@ -331,7 +356,9 @@ function RestaurantPage() {
       <section className="row justify-content-center">
         <section className="col-11 mt-2 restaurant-main-image position-relative">
           <img src={"/images/" + restaurant.image} alt="" />
-          <button className="btn-gallery position-absolute btn">
+          <button className="btn-gallery position-absolute btn"
+          data-bs-toggle="modal"
+          data-bs-target="#slideShow">
             Click to see Image Gallery
           </button>
         </section>
